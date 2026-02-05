@@ -69,121 +69,107 @@ namespace trial.DAL
 
         // Get all products
         public List<Product> GetAllProducts()
+{
+    List<Product> products = new List<Product>();
+
+    using (SqlConnection conn = new SqlConnection(_connectionString))
+    {
+        using (SqlCommand cmd = new SqlCommand("sp_GetAllProducts", conn))
         {
-            List<Product> products = new List<Product>();
+            cmd.CommandType = CommandType.StoredProcedure;
 
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            conn.Open();
+            using (SqlDataReader reader = cmd.ExecuteReader())
             {
-                string query = @"
-                    SELECT p.ProductId, p.ProductName, p.Price, p.StockQuantity, 
-                           p.CategoryId, c.CategoryName
-                    FROM Product p
-                    INNER JOIN Category c ON p.CategoryId = c.CategoryId";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                while (reader.Read())
                 {
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    products.Add(new Product
                     {
-                        while (reader.Read())
-                        {
-                            products.Add(new Product
-                            {
-                                ProductId = Convert.ToInt32(reader["ProductId"]),
-                                ProductName = reader["ProductName"]?.ToString() ?? string.Empty,
-                                Price = Convert.ToDecimal(reader["Price"]),
-                                StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
-                                CategoryId = Convert.ToInt32(reader["CategoryId"]),
-                                CategoryName = reader["CategoryName"]?.ToString() ?? string.Empty
-                            });
-                        }
-                    }
+                        ProductId = Convert.ToInt32(reader["ProductId"]),
+                        ProductName = reader["ProductName"]?.ToString() ?? string.Empty,
+                        Price = Convert.ToDecimal(reader["Price"]),
+                        StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
+                        CategoryId = Convert.ToInt32(reader["CategoryId"]),
+                        CategoryName = reader["CategoryName"]?.ToString() ?? string.Empty
+                    });
                 }
             }
-
-            return products;
         }
+    }
+
+    return products;
+}
+
 
         // Get all categories
-        public List<Category> GetCategories()
-        {
-            List<Category> categories = new List<Category>();
-            using (SqlConnection conn = new SqlConnection(_connectionString))
-            {
-                string query = "SELECT CategoryId, CategoryName FROM Category";
+      public List<Category> GetCategories()
+{
+    List<Category> categories = new List<Category>();
 
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+    using (SqlConnection conn = new SqlConnection(_connectionString))
+    {
+        using (SqlCommand cmd = new SqlCommand("sp_GetCategories", conn))
+        {
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            conn.Open();
+            using (SqlDataReader reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
                 {
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    categories.Add(new Category
                     {
-                        while (reader.Read())
-                        {
-                            categories.Add(new Category
-                            {
-                                CategoryId = Convert.ToInt32(reader["CategoryId"]),
-                                CategoryName = reader["CategoryName"]?.ToString() ?? string.Empty
-                            });
-                        }
-                    }
+                        CategoryId = Convert.ToInt32(reader["CategoryId"]),
+                        CategoryName = reader["CategoryName"]?.ToString() ?? string.Empty
+                    });
                 }
             }
-            return categories;
         }
+    }
+
+    return categories;
+}
+
 
         // Update product
         public bool UpdateProduct(Product product, out string message)
+{
+    using (SqlConnection conn = new SqlConnection(_connectionString))
+    {
+        try
         {
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            using (SqlCommand cmd = new SqlCommand("sp_UpdateProduct", conn))
             {
-                try
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@Id", product.ProductId);
+                cmd.Parameters.AddWithValue("@Name", product.ProductName);
+                cmd.Parameters.AddWithValue("@Price", product.Price);
+                cmd.Parameters.AddWithValue("@Stock", product.StockQuantity);
+                cmd.Parameters.AddWithValue("@CatId", product.CategoryId);
+
+                SqlParameter msgParam = new SqlParameter("@Message", SqlDbType.NVarChar, 200)
                 {
-                    string query = @"
-                        UPDATE Product
-                        SET ProductName=@Name, Price=@Price, StockQuantity=@Stock, CategoryId=@CatId
-                        WHERE ProductId=@Id";
+                    Direction = ParameterDirection.Output
+                };
+                cmd.Parameters.Add(msgParam);
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@Id", product.ProductId);
-                        cmd.Parameters.AddWithValue("@Name", product.ProductName);
-                        cmd.Parameters.AddWithValue("@Price", product.Price);
-                        cmd.Parameters.AddWithValue("@Stock", product.StockQuantity);
-                        cmd.Parameters.AddWithValue("@CatId", product.CategoryId);
+                conn.Open();
+                cmd.ExecuteNonQuery();
 
-                        conn.Open();
-                        int rowsAffected = cmd.ExecuteNonQuery();
+                message = msgParam.Value?.ToString() ?? "Unknown result.";
 
-                        if (rowsAffected > 0)
-                        {
-                            message = "Product updated successfully.";
-                            return true;
-                        }
-                        else
-                        {
-                            message = "Product not found. Cannot update.";
-                            return false;
-                        }
-                    }
-                }
-                catch (SqlException ex)
-                {
-                    if (ex.Number == 2601 || ex.Number == 2627)
-                    {
-                        message = "A product with this name already exists. Cannot update.";
-                        return false;
-                    }
-
-                    message = $"Database error: {ex.Message}";
-                    return false;
-                }
-                catch (Exception ex)
-                {
-                    message = $"Error: {ex.Message}";
-                    return false;
-                }
+                return message == "Product updated successfully.";
             }
         }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            return false;
+        }
+    }
+}
+
 
         // Delete product
         public bool DeleteProduct(int productId, out string message)

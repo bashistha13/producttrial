@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using trial.DAL;
 using trial.Models;
-using System.Collections.Generic;
 
 namespace trial.Controllers
 {
@@ -19,8 +18,11 @@ namespace trial.Controllers
         public IActionResult Index()
         {
             var products = _dal.GetAllProducts();
+
+            // TempData messages for alerts
             ViewBag.Success = TempData["Success"];
             ViewBag.Error = TempData["Error"];
+
             return View(products);
         }
 
@@ -45,7 +47,8 @@ namespace trial.Controllers
             string message;
             bool success = _dal.AddProduct(product, out message);
             TempData[success ? "Success" : "Error"] = message;
-            return success ? RedirectToAction("Index") : View(product);
+    
+            return RedirectToAction("Index");
         }
 
         // GET: Edit
@@ -76,7 +79,8 @@ namespace trial.Controllers
             string message;
             bool success = _dal.UpdateProduct(product, out message);
             TempData[success ? "Success" : "Error"] = message;
-            return success ? RedirectToAction("Index") : View(product);
+
+            return RedirectToAction("Index");
         }
 
         // POST: Delete
@@ -86,6 +90,7 @@ namespace trial.Controllers
             string message;
             bool success = _dal.DeleteProduct(id, out message);
             TempData[success ? "Success" : "Error"] = message;
+
             return RedirectToAction("Index");
         }
     }

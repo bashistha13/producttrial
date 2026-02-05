@@ -17,7 +17,7 @@ namespace trial.DAL
                                 ?? throw new ArgumentException("DefaultConnection is not configured");
         }
 
-        // Add new product
+        // Add new product using stored procedure
         public bool AddProduct(Product product, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -27,17 +27,26 @@ namespace trial.DAL
                     using (SqlCommand cmd = new SqlCommand("sp_AddProduct", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
+
                         cmd.Parameters.AddWithValue("@Name", product.ProductName);
                         cmd.Parameters.AddWithValue("@Price", product.Price);
                         cmd.Parameters.AddWithValue("@Stock", product.StockQuantity);
                         cmd.Parameters.AddWithValue("@CatId", product.CategoryId);
 
+                        // Output parameter to get message from SQL
+                        SqlParameter outputParam = new SqlParameter("@Message", SqlDbType.NVarChar, 200)
+                        {
+                            Direction = ParameterDirection.Output
+                        };
+                        cmd.Parameters.Add(outputParam);
+
                         conn.Open();
                         cmd.ExecuteNonQuery();
-                    }
 
-                    message = "Product added successfully.";
-                    return true;
+                        message = outputParam.Value?.ToString() ?? string.Empty;
+
+                        return message.Contains("successfully"); // true if added
+                    }
                 }
                 catch (SqlException ex)
                 {
@@ -46,6 +55,7 @@ namespace trial.DAL
                         message = "This product already exists. Cannot add.";
                         return false;
                     }
+
                     message = $"Database error: {ex.Message}";
                     return false;
                 }
@@ -61,6 +71,7 @@ namespace trial.DAL
         public List<Product> GetAllProducts()
         {
             List<Product> products = new List<Product>();
+
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 string query = @"
@@ -90,9 +101,7 @@ namespace trial.DAL
                 }
             }
 
-            
             return products;
-            
         }
 
         // Get all categories
@@ -164,6 +173,7 @@ namespace trial.DAL
                         message = "A product with this name already exists. Cannot update.";
                         return false;
                     }
+
                     message = $"Database error: {ex.Message}";
                     return false;
                 }

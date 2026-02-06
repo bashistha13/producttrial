@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "sPmLQcYdtsGvEf23WsQKWSoUPoXH4jf1EhJgJpuk62I=",
+  "Hash": "h5mZdVmpUX2VfKHqBD3D4gK4E7YPQx6ngw4KhPvyz7Y=",
   "Source": "trail",
   "BasePath": "_content/trail",
   "Mode": "Default",
@@ -110,6 +110,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/images/products/49196515-a326-4407-9222-fcd04ba339ed.jpeg"
+    },
+    {
+      "Identity": "/Users/bashisthapandey/Desktop/trail/wwwroot/images/products/601aa50d-4942-424e-9ba6-d525088c671b.jpeg",
+      "SourceId": "trail",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/bashisthapandey/Desktop/trail/wwwroot/",
+      "BasePath": "_content/trail",
+      "RelativePath": "images/products/601aa50d-4942-424e-9ba6-d525088c671b.jpeg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/images/products/601aa50d-4942-424e-9ba6-d525088c671b.jpeg"
     },
     {
       "Identity": "/Users/bashisthapandey/Desktop/trail/wwwroot/images/products/6a474a27-c61d-4259-b079-adb33b79c93e.jpeg",

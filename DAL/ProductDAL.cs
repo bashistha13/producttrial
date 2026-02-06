@@ -14,26 +14,25 @@ namespace trial.DAL
         public ProductDAL(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") 
-                                ?? throw new ArgumentException("DefaultConnection is not configured");
+                                ?? throw new InvalidOperationException("DefaultConnection is not configured.");
         }
 
-        // Add new product using stored procedure
-        public bool AddProduct(Product product, out string message)
+        public bool UpsertProduct(Product product, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 try
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_AddProduct", conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_UpsertProduct", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-
+                        cmd.Parameters.AddWithValue("@ProductId", product.ProductId);
                         cmd.Parameters.AddWithValue("@Name", product.ProductName);
                         cmd.Parameters.AddWithValue("@Price", product.Price);
                         cmd.Parameters.AddWithValue("@Stock", product.StockQuantity);
                         cmd.Parameters.AddWithValue("@CatId", product.CategoryId);
+                        cmd.Parameters.AddWithValue("@ImagePath", product.ImagePath != null ? (object)product.ImagePath : DBNull.Value);
 
-                        // Output parameter to get message from SQL
                         SqlParameter outputParam = new SqlParameter("@Message", SqlDbType.NVarChar, 200)
                         {
                             Direction = ParameterDirection.Output
@@ -44,165 +43,109 @@ namespace trial.DAL
                         cmd.ExecuteNonQuery();
 
                         message = outputParam.Value?.ToString() ?? string.Empty;
-
-                        return message.Contains("successfully"); // true if added
+                        return message.Contains("successfully");
                     }
-                }
-                catch (SqlException ex)
-                {
-                    if (ex.Number == 2601 || ex.Number == 2627 || ex.Number == 50003)
-                    {
-                        message = "This product already exists. Cannot add.";
-                        return false;
-                    }
-
-                    message = $"Database error: {ex.Message}";
-                    return false;
                 }
                 catch (Exception ex)
                 {
-                    message = $"Error: {ex.Message}";
+                    message = "Error: " + ex.Message;
                     return false;
                 }
             }
         }
 
-        // Get all products
-        public List<Product> GetAllProducts()
-{
-    List<Product> products = new List<Product>();
-
-    using (SqlConnection conn = new SqlConnection(_connectionString))
-    {
-        using (SqlCommand cmd = new SqlCommand("sp_GetAllProducts", conn))
-        {
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            conn.Open();
-            using (SqlDataReader reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    products.Add(new Product
-                    {
-                        ProductId = Convert.ToInt32(reader["ProductId"]),
-                        ProductName = reader["ProductName"]?.ToString() ?? string.Empty,
-                        Price = Convert.ToDecimal(reader["Price"]),
-                        StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
-                        CategoryId = Convert.ToInt32(reader["CategoryId"]),
-                        CategoryName = reader["CategoryName"]?.ToString() ?? string.Empty
-                    });
-                }
-            }
-        }
-    }
-
-    return products;
-}
-
-
-        // Get all categories
-      public List<Category> GetCategories()
-{
-    List<Category> categories = new List<Category>();
-
-    using (SqlConnection conn = new SqlConnection(_connectionString))
-    {
-        using (SqlCommand cmd = new SqlCommand("sp_GetCategories", conn))
-        {
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            conn.Open();
-            using (SqlDataReader reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    categories.Add(new Category
-                    {
-                        CategoryId = Convert.ToInt32(reader["CategoryId"]),
-                        CategoryName = reader["CategoryName"]?.ToString() ?? string.Empty
-                    });
-                }
-            }
-        }
-    }
-
-    return categories;
-}
-
-
-        // Update product
-        public bool UpdateProduct(Product product, out string message)
-{
-    using (SqlConnection conn = new SqlConnection(_connectionString))
-    {
-        try
-        {
-            using (SqlCommand cmd = new SqlCommand("sp_UpdateProduct", conn))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-
-                cmd.Parameters.AddWithValue("@Id", product.ProductId);
-                cmd.Parameters.AddWithValue("@Name", product.ProductName);
-                cmd.Parameters.AddWithValue("@Price", product.Price);
-                cmd.Parameters.AddWithValue("@Stock", product.StockQuantity);
-                cmd.Parameters.AddWithValue("@CatId", product.CategoryId);
-
-                SqlParameter msgParam = new SqlParameter("@Message", SqlDbType.NVarChar, 200)
-                {
-                    Direction = ParameterDirection.Output
-                };
-                cmd.Parameters.Add(msgParam);
-
-                conn.Open();
-                cmd.ExecuteNonQuery();
-
-                message = msgParam.Value?.ToString() ?? "Unknown result.";
-
-                return message == "Product updated successfully.";
-            }
-        }
-        catch (Exception ex)
-        {
-            message = $"Error: {ex.Message}";
-            return false;
-        }
-    }
-}
-
-
-        // Delete product
-        public bool DeleteProduct(int productId, out string message)
+        public bool DeleteProduct(int id, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 try
                 {
-                    string query = "DELETE FROM Product WHERE ProductId=@Id";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_DeleteProduct", conn))
                     {
-                        cmd.Parameters.AddWithValue("@Id", productId);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@Id", id);
+                        
                         conn.Open();
-                        int rowsAffected = cmd.ExecuteNonQuery();
+                        int rows = cmd.ExecuteNonQuery();
 
-                        if (rowsAffected > 0)
+                        if (rows > 0)
                         {
-                            message = "Product deleted successfully.";
+                            message = "Product deleted permanently.";
                             return true;
                         }
                         else
                         {
-                            message = "Product not found. Cannot delete.";
+                            message = "Product not found or already deleted.";
                             return false;
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (SqlException ex)
                 {
-                    message = $"Error: {ex.Message}";
+                    if (ex.Number == 547)
+                    {
+                        message = "Cannot delete: This product is used in orders/bills.";
+                        return false;
+                    }
+                    message = "Database Error: " + ex.Message;
                     return false;
                 }
             }
+        }
+
+        public List<Product> GetAllProducts()
+        {
+            var products = new List<Product>();
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("sp_GetAllProducts", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            products.Add(new Product
+                            {
+                                ProductId = Convert.ToInt32(reader["ProductId"]),
+                                ProductName = reader["ProductName"] != DBNull.Value ? reader["ProductName"].ToString() ?? string.Empty : string.Empty,
+                                Price = Convert.ToDecimal(reader["Price"]),
+                                StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
+                                CategoryId = Convert.ToInt32(reader["CategoryId"]),
+                                CategoryName = reader["CategoryName"] != DBNull.Value ? reader["CategoryName"].ToString() ?? string.Empty : string.Empty,
+                                ImagePath = reader["ImagePath"] != DBNull.Value ? reader["ImagePath"].ToString() : null
+                            });
+                        }
+                    }
+                }
+            }
+            return products;
+        }
+
+        public List<Category> GetCategories()
+        {
+             var list = new List<Category>();
+             using (SqlConnection conn = new SqlConnection(_connectionString))
+             {
+                 // Assuming sp_GetCategories exists, otherwise change to "SELECT * FROM Category"
+                 using (SqlCommand cmd = new SqlCommand("SELECT * FROM Category", conn))
+                 {
+                     conn.Open();
+                     using (SqlDataReader reader = cmd.ExecuteReader())
+                     {
+                         while (reader.Read())
+                         {
+                             list.Add(new Category
+                             {
+                                 CategoryId = Convert.ToInt32(reader["CategoryId"]),
+                                 CategoryName = reader["CategoryName"] != DBNull.Value ? reader["CategoryName"].ToString() ?? string.Empty : string.Empty
+                             });
+                         }
+                     }
+                 }
+             }
+             return list;
         }
     }
 }

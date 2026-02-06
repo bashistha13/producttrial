@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+using System.Threading.Tasks;
+using System;
 using trial.DAL;
 using trial.Models;
 
@@ -8,89 +11,60 @@ namespace trial.Controllers
     public class ProductController : Controller
     {
         private readonly ProductDAL _dal;
+        private readonly IWebHostEnvironment _hostEnvironment;
 
-        public ProductController(IConfiguration configuration)
+        public ProductController(IConfiguration configuration, IWebHostEnvironment hostEnvironment)
         {
             _dal = new ProductDAL(configuration);
+            _hostEnvironment = hostEnvironment;
         }
 
-        // List all products
         public IActionResult Index()
         {
+            // Load categories here so the Modal dropdown has data immediately
+            ViewBag.Categories = _dal.GetCategories();
             var products = _dal.GetAllProducts();
-
-            // TempData messages for alerts
-            ViewBag.Success = TempData["Success"];
-            ViewBag.Error = TempData["Error"];
-
             return View(products);
         }
 
-        // GET: Create
+        // NEW: specific method to get JSON data for the popup
         [HttpGet]
-        public IActionResult Create()
-        {
-            ViewBag.Categories = _dal.GetCategories();
-            return View();
-        }
-
-        // POST: Create
-        [HttpPost]
-        public IActionResult Create(Product product)
-        {
-            if (!ModelState.IsValid)
-            {
-                ViewBag.Categories = _dal.GetCategories();
-                return View(product);
-            }
-
-            string message;
-            bool success = _dal.AddProduct(product, out message);
-            TempData[success ? "Success" : "Error"] = message;
-    
-            return RedirectToAction("Index");
-        }
-
-        // GET: Edit
-        [HttpGet]
-        public IActionResult Edit(int id)
+        public IActionResult GetProduct(int id)
         {
             var product = _dal.GetAllProducts().Find(p => p.ProductId == id);
-            if (product == null)
-            {
-                TempData["Error"] = "Product not found.";
-                return RedirectToAction("Index");
-            }
-
-            ViewBag.Categories = _dal.GetCategories();
-            return View(product);
+            return Json(product);
         }
 
-        // POST: Edit
         [HttpPost]
-        public IActionResult Edit(Product product)
+        public async Task<IActionResult> AddOrEdit(Product product, IFormFile file)
         {
-            if (!ModelState.IsValid)
+            string message = "";
+            
+            // Image Upload Logic
+            if (file != null && file.Length > 0)
             {
-                ViewBag.Categories = _dal.GetCategories();
-                return View(product);
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                string uploadPath = Path.Combine(_hostEnvironment.WebRootPath, "images/products");
+                if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+                
+                using (var stream = new FileStream(Path.Combine(uploadPath, fileName), FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+                product.ImagePath = "/images/products/" + fileName;
             }
 
-            string message;
-            bool success = _dal.UpdateProduct(product, out message);
-            TempData[success ? "Success" : "Error"] = message;
-
-            return RedirectToAction("Index");
+            bool success = _dal.UpsertProduct(product, out message);
+            return Json(new { success = success, message = message });
         }
-
-        // POST: Delete
+        
         [HttpPost]
         public IActionResult Delete(int id)
         {
             string message;
             bool success = _dal.DeleteProduct(id, out message);
+            
             TempData[success ? "Success" : "Error"] = message;
-
             return RedirectToAction("Index");
         }
     }

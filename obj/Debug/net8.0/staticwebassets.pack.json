@@ -13,6 +13,18 @@
       "PackagePath": "staticwebassets/favicon.ico"
     },
     {
+      "Id": "/Users/bashisthapandey/Desktop/trail/wwwroot/images/products/49196515-a326-4407-9222-fcd04ba339ed.jpeg",
+      "PackagePath": "staticwebassets/images/products/49196515-a326-4407-9222-fcd04ba339ed.jpeg"
+    },
+    {
+      "Id": "/Users/bashisthapandey/Desktop/trail/wwwroot/images/products/6a474a27-c61d-4259-b079-adb33b79c93e.jpeg",
+      "PackagePath": "staticwebassets/images/products/6a474a27-c61d-4259-b079-adb33b79c93e.jpeg"
+    },
+    {
+      "Id": "/Users/bashisthapandey/Desktop/trail/wwwroot/images/products/d4c675d7-6507-479d-98ca-106b6ca0e45c.jpeg",
+      "PackagePath": "staticwebassets/images/products/d4c675d7-6507-479d-98ca-106b6ca0e45c.jpeg"
+    },
+    {
       "Id": "/Users/bashisthapandey/Desktop/trail/wwwroot/js/site.js",
       "PackagePath": "staticwebassets/js/site.js"
     },
@@ -243,6 +255,10 @@
     {
       "Id": "/Users/bashisthapandey/Desktop/trail/wwwroot/lib/jquery/dist/jquery.min.map",
       "PackagePath": "staticwebassets/lib/jquery/dist/jquery.min.map"
+    },
+    {
+      "Id": "/Users/bashisthapandey/Desktop/trail/wwwroot/uploads/fridge.jpg",
+      "PackagePath": "staticwebassets/uploads/fridge.jpg"
     },
     {
       "Id": "obj/Debug/net8.0/staticwebassets/msbuild.build.trail.props",

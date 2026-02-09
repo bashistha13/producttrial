@@ -11,5 +11,7 @@ namespace trial.Models
         public string? CategoryName { get; set; } 
 
         public string? ImagePath { get; set; }
+
+        public bool IsDeleted { get; set; }
     }
 }

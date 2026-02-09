@@ -17,6 +17,7 @@ namespace trial.DAL
                                 ?? throw new InvalidOperationException("DefaultConnection is not configured.");
         }
 
+        // --- 1. UPSERT (Add/Edit) ---
         public bool UpsertProduct(Product product, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -54,6 +55,7 @@ namespace trial.DAL
             }
         }
 
+        // --- 2. DELETE (Now Soft Delete) ---
         public bool DeleteProduct(int id, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -66,38 +68,36 @@ namespace trial.DAL
                         cmd.Parameters.AddWithValue("@Id", id);
                         
                         conn.Open();
+                        // This now performs an UPDATE (setting IsDeleted=1)
                         int rows = cmd.ExecuteNonQuery();
 
                         if (rows > 0)
                         {
-                            message = "Product deleted permanently.";
+                            message = "Product deleted successfully.";
                             return true;
                         }
                         else
                         {
-                            message = "Product not found or already deleted.";
+                            message = "Product not found.";
                             return false;
                         }
                     }
                 }
                 catch (SqlException ex)
                 {
-                    if (ex.Number == 547)
-                    {
-                        message = "Cannot delete: This product is used in orders/bills.";
-                        return false;
-                    }
                     message = "Database Error: " + ex.Message;
                     return false;
                 }
             }
         }
 
+        // --- 3. GET ALL (Filtered) ---
         public List<Product> GetAllProducts()
         {
             var products = new List<Product>();
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
+                // Calls the updated SP which filters WHERE IsDeleted = 0
                 using (SqlCommand cmd = new SqlCommand("sp_GetAllProducts", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -114,7 +114,10 @@ namespace trial.DAL
                                 StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
                                 CategoryId = Convert.ToInt32(reader["CategoryId"]),
                                 CategoryName = reader["CategoryName"] != DBNull.Value ? reader["CategoryName"].ToString() ?? string.Empty : string.Empty,
-                                ImagePath = reader["ImagePath"] != DBNull.Value ? reader["ImagePath"].ToString() : null
+                                ImagePath = reader["ImagePath"] != DBNull.Value ? reader["ImagePath"].ToString() : null,
+                                
+                                // Map the new column
+                                IsDeleted = reader["IsDeleted"] != DBNull.Value && Convert.ToBoolean(reader["IsDeleted"])
                             });
                         }
                     }
@@ -123,12 +126,12 @@ namespace trial.DAL
             return products;
         }
 
+        // --- 4. GET CATEGORIES ---
         public List<Category> GetCategories()
         {
              var list = new List<Category>();
              using (SqlConnection conn = new SqlConnection(_connectionString))
              {
-                 // Assuming sp_GetCategories exists, otherwise change to "SELECT * FROM Category"
                  using (SqlCommand cmd = new SqlCommand("SELECT * FROM Category", conn))
                  {
                      conn.Open();

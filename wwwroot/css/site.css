@@ -1,22 +1,110 @@
-html {
-  font-size: 14px;
+/* GLOBAL STYLES */
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+    background-color: #f5f6f8;
 }
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+/* WRAPPER */
+.d-flex#wrapper {
+    height: 100vh;
+    overflow: hidden;
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+/* SIDEBAR (White Theme) */
+#sidebar-wrapper {
+    min-height: 100vh;
+    width: 250px; /* Default Width */
+    min-width: 250px;
+    margin-left: 0;
+    background-color: #ffffff;
+    border-right: 1px solid #e0e0e0;
+    transition: all 0.3s ease; /* Smooth transition for width */
+    overflow-x: hidden; /* Hide text when shrinking */
+    white-space: nowrap; /* Prevent text wrapping */
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+/* Sidebar Text & Links */
+.sidebar-heading {
+    height: 70px; /* Fixed height for header */
 }
 
-body {
-  margin-bottom: 60px;
+.list-group-item {
+    border: none;
+    padding: 15px 20px;
+    color: #333;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    color: #007bff;
+}
+
+/* --- TOGGLED STATE (MINIFIED SIDEBAR) --- */
+
+/* Shrink Sidebar Width */
+#wrapper.toggled #sidebar-wrapper {
+    width: 70px;
+    min-width: 70px;
+}
+
+/* Hide Brand Text ("TRAIL APP") */
+#wrapper.toggled .brand-text {
+    display: none;
+}
+
+/* Hide Link Text ("Setup", "Reports", etc.) */
+#wrapper.toggled .menu-text {
+    display: none;
+}
+
+/* Center the Icons */
+#wrapper.toggled .list-group-item {
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#wrapper.toggled .list-group-item i {
+    margin-right: 0 !important; /* Remove margin between icon and (hidden) text */
+}
+
+/* Hide Dropdown Arrow in Minified Mode */
+#wrapper.toggled .dropdown-toggle::after {
+    display: none;
+}
+
+/* Adjust padding for submenu items in minified mode */
+#wrapper.toggled .sub-menu .list-group-item {
+    padding-left: 0 !important; /* Reset indentation */
+}
+
+/* --- END TOGGLED STATE --- */
+
+/* PAGE CONTENT */
+#page-content-wrapper {
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    background-color: #f5f6f8;
+    transition: all 0.3s ease;
+}
+
+/* Navbar */
+.navbar {
+    height: 70px; /* Match sidebar header height */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    /* On Mobile, Toggled means HIDDEN completely */
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: -250px; 
+        width: 250px; /* Reset width so it slides out */
+    }
 }

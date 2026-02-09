@@ -17,7 +17,6 @@ namespace trial.DAL
                                 ?? throw new InvalidOperationException("DefaultConnection is not configured.");
         }
 
-        // --- 1. UPSERT (Add/Edit) ---
         public bool UpsertProduct(Product product, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -32,30 +31,22 @@ namespace trial.DAL
                         cmd.Parameters.AddWithValue("@Price", product.Price);
                         cmd.Parameters.AddWithValue("@Stock", product.StockQuantity);
                         cmd.Parameters.AddWithValue("@CatId", product.CategoryId);
-                        cmd.Parameters.AddWithValue("@ImagePath", product.ImagePath != null ? (object)product.ImagePath : DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ImagePath", (object?)product.ImagePath ?? DBNull.Value);
 
-                        SqlParameter outputParam = new SqlParameter("@Message", SqlDbType.NVarChar, 200)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
+                        SqlParameter outputParam = new SqlParameter("@Message", SqlDbType.NVarChar, 200) { Direction = ParameterDirection.Output };
                         cmd.Parameters.Add(outputParam);
 
                         conn.Open();
                         cmd.ExecuteNonQuery();
 
                         message = outputParam.Value?.ToString() ?? string.Empty;
-                        return message.Contains("successfully");
+                        return message.Contains("successfully", StringComparison.OrdinalIgnoreCase);
                     }
                 }
-                catch (Exception ex)
-                {
-                    message = "Error: " + ex.Message;
-                    return false;
-                }
+                catch (Exception ex) { message = "Error: " + ex.Message; return false; }
             }
         }
 
-        // --- 2. DELETE (Now Soft Delete) ---
         public bool DeleteProduct(int id, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -66,41 +57,27 @@ namespace trial.DAL
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@Id", id);
-                        
                         conn.Open();
-                        // This now performs an UPDATE (setting IsDeleted=1)
                         int rows = cmd.ExecuteNonQuery();
-
-                        if (rows > 0)
-                        {
-                            message = "Product deleted successfully.";
-                            return true;
-                        }
-                        else
-                        {
-                            message = "Product not found.";
-                            return false;
-                        }
+                        message = rows > 0 ? "Product deleted successfully." : "Product not found.";
+                        return rows > 0;
                     }
                 }
-                catch (SqlException ex)
-                {
-                    message = "Database Error: " + ex.Message;
-                    return false;
-                }
+                catch (Exception ex) { message = "Database Error: " + ex.Message; return false; }
             }
         }
 
-        // --- 3. GET ALL (Filtered) ---
-        public List<Product> GetAllProducts()
+        public List<Product> GetAllProducts(DateTime? fromDate = null, DateTime? toDate = null)
         {
             var products = new List<Product>();
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                // Calls the updated SP which filters WHERE IsDeleted = 0
                 using (SqlCommand cmd = new SqlCommand("sp_GetAllProducts", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@FromDate", (object?)fromDate ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ToDate", (object?)toDate ?? DBNull.Value);
+
                     conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
@@ -109,15 +86,15 @@ namespace trial.DAL
                             products.Add(new Product
                             {
                                 ProductId = Convert.ToInt32(reader["ProductId"]),
-                                ProductName = reader["ProductName"] != DBNull.Value ? reader["ProductName"].ToString() ?? string.Empty : string.Empty,
+                                ProductName = reader["ProductName"]?.ToString() ?? string.Empty,
                                 Price = Convert.ToDecimal(reader["Price"]),
                                 StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
                                 CategoryId = Convert.ToInt32(reader["CategoryId"]),
-                                CategoryName = reader["CategoryName"] != DBNull.Value ? reader["CategoryName"].ToString() ?? string.Empty : string.Empty,
+                                CategoryName = reader["CategoryName"]?.ToString() ?? string.Empty,
                                 ImagePath = reader["ImagePath"] != DBNull.Value ? reader["ImagePath"].ToString() : null,
-                                
-                                // Map the new column
-                                IsDeleted = reader["IsDeleted"] != DBNull.Value && Convert.ToBoolean(reader["IsDeleted"])
+                                IsDeleted = Convert.ToBoolean(reader["IsDeleted"]),
+                                InsertedDate = reader["InsertedDate"] != DBNull.Value ? Convert.ToDateTime(reader["InsertedDate"]) : DateTime.MinValue,
+                                ModifiedDate = reader["ModifiedDate"] != DBNull.Value ? Convert.ToDateTime(reader["ModifiedDate"]) : DateTime.MinValue
                             });
                         }
                     }
@@ -126,7 +103,6 @@ namespace trial.DAL
             return products;
         }
 
-        // --- 4. GET CATEGORIES ---
         public List<Category> GetCategories()
         {
              var list = new List<Category>();
@@ -142,7 +118,7 @@ namespace trial.DAL
                              list.Add(new Category
                              {
                                  CategoryId = Convert.ToInt32(reader["CategoryId"]),
-                                 CategoryName = reader["CategoryName"] != DBNull.Value ? reader["CategoryName"].ToString() ?? string.Empty : string.Empty
+                                 CategoryName = reader["CategoryName"]?.ToString() ?? string.Empty
                              });
                          }
                      }

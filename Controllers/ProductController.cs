@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Authorization; // Needed for Authorize
+using Microsoft.AspNetCore.Authorization;
 using System.IO;
 using System.Threading.Tasks;
 using System;
@@ -20,10 +20,13 @@ namespace trial.Controllers
             _hostEnvironment = hostEnvironment;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(DateTime? fromDate, DateTime? toDate)
         {
             ViewBag.Categories = _dal.GetCategories();
-            var products = _dal.GetAllProducts();
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+
+            var products = _dal.GetAllProducts(fromDate, toDate);
             return View(products);
         }
 
@@ -34,13 +37,11 @@ namespace trial.Controllers
             return Json(product);
         }
 
-        // NEW: Only Admins can Add/Edit
         [HttpPost]
         [Authorize(Roles = "Admin")] 
         public async Task<IActionResult> AddOrEdit(Product product, IFormFile file)
         {
             string message = "";
-            
             if (file != null && file.Length > 0)
             {
                 string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
@@ -58,14 +59,12 @@ namespace trial.Controllers
             return Json(new { success = success, message = message });
         }
         
-        // NEW: Only Admins can Delete
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public IActionResult Delete(int id)
         {
             string message;
             bool success = _dal.DeleteProduct(id, out message);
-            
             TempData[success ? "Success" : "Error"] = message;
             return RedirectToAction("Index");
         }

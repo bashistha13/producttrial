@@ -9,7 +9,10 @@
 @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
 @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
 
-<button onclick="openModal(0)" class="btn btn-success mb-3">Add New Product</button>
+@if (User.IsInRole("Admin")) 
+{
+    <button onclick="openModal(0)" class="btn btn-success mb-3">Add New Product</button>
+}
 
 <table id="productsTable" class="table table-bordered table-striped">
     <thead>
@@ -19,7 +22,10 @@
             <th>Price</th>
             <th>Stock</th>
             <th>Category</th>
-            <th>Actions</th>
+            @if (User.IsInRole("Admin")) 
+            {
+                <th>Actions</th>
+            }
         </tr>
     </thead>
     <tbody>
@@ -34,13 +40,17 @@
                 <td>@p.Price</td>
                 <td>@p.StockQuantity</td>
                 <td>@p.CategoryName</td>
-                <td>
-                    <button onclick="openModal(@p.ProductId)" class="btn btn-primary btn-sm">Edit</button>
-                    
-                    <form asp-action="Delete" asp-route-id="@p.ProductId" method="post" style="display:inline" onsubmit="return confirm('Delete permanently?');">
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                </td>
+                
+                @if (User.IsInRole("Admin"))
+                {
+                    <td>
+                        <button onclick="openModal(@p.ProductId)" class="btn btn-primary btn-sm">Edit</button>
+                        
+                        <form asp-action="Delete" asp-route-id="@p.ProductId" method="post" style="display:inline" onsubmit="return confirm('Delete permanently?');">
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                }
             </tr>
         }
     </tbody>
@@ -103,31 +113,25 @@
     <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
 
     <script>
-        // 1. Initialize DataTable
         $(document).ready(function() {
             $('#productsTable').DataTable();
         });
 
-        // 2. Configure Dropzone
         Dropzone.autoDiscover = false;
         var myDropzone = new Dropzone("#productForm", {
-            url: "/Product/AddOrEdit", // URL to send files
-            autoProcessQueue: false,   // Wait for Save button
+            url: "/Product/AddOrEdit",
+            autoProcessQueue: false, 
             uploadMultiple: false,
             maxFiles: 1,
             addRemoveLinks: true,
             init: function() {
                 var dz = this;
                 
-                // When "Save" is clicked
                 document.getElementById("btnSave").addEventListener("click", function (e) {
                     e.preventDefault();
-                    
-                    // If file exists, process queue (sends Form + File)
                     if (dz.getQueuedFiles().length > 0) {
                         dz.processQueue();
                     } else {
-                        // If no file, manually send form data using Fetch
                         var formData = new FormData(document.querySelector("#productForm"));
                         fetch('/Product/AddOrEdit', { method: 'POST', body: formData })
                             .then(r => r.json())
@@ -138,13 +142,11 @@
                     }
                 });
 
-                // On Success from Dropzone
                 this.on("success", function (file, response) {
                     if (response.success) location.reload();
                     else alert(response.message);
                 });
                 
-                // Append form fields to Dropzone request
                 this.on("sending", function(file, xhr, formData) {
                     formData.append("ProductId", $('#ProductId').val());
                     formData.append("ProductName", $('#ProductName').val());
@@ -156,20 +158,16 @@
             }
         });
 
-        // 3. Open Modal Logic (Add or Edit)
         function openModal(id) {
-            // Reset Form & Dropzone
             $('#productForm')[0].reset();
             myDropzone.removeAllFiles(true);
             
             if (id === 0) {
-                // ADD MODE
                 $('#modalTitle').text("Add Product");
                 $('#ProductId').val(0);
                 $('#ImagePath').val('');
                 $('#productModal').modal('show');
             } else {
-                // EDIT MODE - Fetch data first
                 fetch('/Product/GetProduct/' + id)
                     .then(response => response.json())
                     .then(data => {
@@ -179,8 +177,7 @@
                         $('#Price').val(data.price);
                         $('#StockQuantity').val(data.stockQuantity);
                         $('#CategoryId').val(data.categoryId);
-                        $('#ImagePath').val(data.imagePath); // Keep old path
-                        
+                        $('#ImagePath').val(data.imagePath);
                         $('#productModal').modal('show');
                     });
             }

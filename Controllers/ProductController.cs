@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization; // Needed for Authorize
 using System.IO;
 using System.Threading.Tasks;
 using System;
@@ -21,13 +22,11 @@ namespace trial.Controllers
 
         public IActionResult Index()
         {
-            // Load categories here so the Modal dropdown has data immediately
             ViewBag.Categories = _dal.GetCategories();
             var products = _dal.GetAllProducts();
             return View(products);
         }
 
-        // NEW: specific method to get JSON data for the popup
         [HttpGet]
         public IActionResult GetProduct(int id)
         {
@@ -35,12 +34,13 @@ namespace trial.Controllers
             return Json(product);
         }
 
+        // NEW: Only Admins can Add/Edit
         [HttpPost]
+        [Authorize(Roles = "Admin")] 
         public async Task<IActionResult> AddOrEdit(Product product, IFormFile file)
         {
             string message = "";
             
-            // Image Upload Logic
             if (file != null && file.Length > 0)
             {
                 string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
@@ -58,7 +58,9 @@ namespace trial.Controllers
             return Json(new { success = success, message = message });
         }
         
+        // NEW: Only Admins can Delete
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public IActionResult Delete(int id)
         {
             string message;

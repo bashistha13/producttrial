@@ -1,0 +1,112 @@
+@model trial.Models.PurchaseEntry
+@{ ViewData["Title"] = "New Purchase Entry"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="text-dark">New Purchase Entry</h2>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>
+
+<form asp-action="Create" method="post">
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-white py-3"><h6 class="m-0 font-weight-bold text-primary">Invoice Details</h6></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 form-group">
+                    <label>Invoice No</label>
+                    <input asp-for="InvoiceNo" class="form-control" required />
+                </div>
+                <div class="col-md-3 form-group">
+                    <label>Date</label>
+                    <input asp-for="PurchaseDate" type="date" class="form-control" required />
+                </div>
+                <div class="col-md-3 form-group">
+                    <label>Supplier</label>
+                    <input asp-for="Supplier" class="form-control" required />
+                </div>
+                <div class="col-md-3 form-group">
+                    <label>Supplier VAT</label>
+                    <input asp-for="SupplierVAT" class="form-control" required />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Product Items</h6>
+            <button type="button" id="btnAddRow" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Add Item</button>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-bordered mb-0" id="tblItems">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Product</th>
+                        <th width="150">Quantity</th>
+                        <th width="50"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+            
+            <div class="p-3 text-right bg-light border-top">
+                <label class="font-weight-bold mr-2">Total Amount:</label>
+                <input asp-for="TotalAmount" type="number" step="0.01" class="form-control d-inline-block" style="width: 150px;" required />
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success btn-lg shadow-sm">Save Entry</button>
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Add first row by default
+            addRow();
+
+            $('#btnAddRow').click(function () {
+                addRow();
+            });
+
+            // Delete Row
+            $(document).on('click', '.btn-remove', function () {
+                $(this).closest('tr').remove();
+                reindexRows();
+            });
+        });
+
+        function addRow() {
+            var index = $('#tblItems tbody tr').length;
+            
+            // Generate Dropdown Options from ViewBag
+            var productOptions = '@Html.Raw(string.Join("", ((SelectList)ViewBag.ProductList).Select(x => $"<option value=\"{x.Value}\">{x.Text}</option>")))';
+
+            var html = `
+                <tr>
+                    <td>
+                        <select name="Details[${index}].ProductId" class="form-control" required>
+                            <option value="">-- Select Product --</option>
+                            ${productOptions}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" name="Details[${index}].Quantity" class="form-control" required min="1" />
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-danger btn-sm btn-remove"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+            $('#tblItems tbody').append(html);
+        }
+
+        // Re-index rows so ASP.NET binding works (Details[0], Details[1]...)
+        function reindexRows() {
+            $('#tblItems tbody tr').each(function (i, row) {
+                $(row).find('select').attr('name', `Details[${i}].ProductId`);
+                $(row).find('input[type="number"]').attr('name', `Details[${i}].Quantity`);
+            });
+        }
+    </script>
+}

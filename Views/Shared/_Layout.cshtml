@@ -43,7 +43,7 @@
                         <span class="menu-text">Product</span>
                     </a>
 
-                    @if (User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == "1")
+                    @if (User.IsInRole("Admin"))
                     {
                         <a asp-controller="ProductEntry" asp-action="Index" class="list-group-item list-group-item-action bg-transparent second-text ps-5" title="Product Entry">
                             <i class="bi bi-receipt me-2 small"></i> 

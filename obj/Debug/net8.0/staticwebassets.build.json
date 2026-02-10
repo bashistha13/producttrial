@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "287YIIWLBGkwFOkCpyoEajA004JdglhEuMgcSDiwEDQ=",
+  "Hash": "ffnR+q5MWfg2BEEmKQE2mLlsZX34kkNQD5dRsGYgN4w=",
   "Source": "trail",
   "BasePath": "_content/trail",
   "Mode": "Default",
@@ -91,6 +91,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/favicon.ico"
+    },
+    {
+      "Identity": "/Users/bashisthapandey/Desktop/trail/wwwroot/images/products/37b0d5a7-9ce2-4981-9d7a-45f730c3cbd8.png",
+      "SourceId": "trail",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/bashisthapandey/Desktop/trail/wwwroot/",
+      "BasePath": "_content/trail",
+      "RelativePath": "images/products/37b0d5a7-9ce2-4981-9d7a-45f730c3cbd8.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/images/products/37b0d5a7-9ce2-4981-9d7a-45f730c3cbd8.png"
     },
     {
       "Identity": "/Users/bashisthapandey/Desktop/trail/wwwroot/images/products/49196515-a326-4407-9222-fcd04ba339ed.jpeg",

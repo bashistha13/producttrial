@@ -1,5 +1,9 @@
 @model List<trial.Models.Product>
-@{ ViewData["Title"] = "Products"; }
+@{ 
+    ViewData["Title"] = "Products"; 
+    // UPDATED: Using IsInRole("Admin") because we know this works for your Actions column
+    bool isAdmin = User.IsInRole("Admin");
+}
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css" />
 <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" />
@@ -68,9 +72,15 @@
                     <th>Name</th>
                     <th>Price</th>
                     <th>Stock</th>
-                    <th>Unit</th> <th>Category</th>
-                    <th>Inserted</th>
-                    <th>Modified</th>
+                    <th>Unit</th>
+                    <th>Category</th>
+                    
+                    @if (isAdmin)
+                    {
+                        <th>Inserted</th>
+                        <th>Modified</th>
+                    }
+                    
                     @if (User.IsInRole("Admin")) 
                     {
                         <th style="width: 150px;">Actions</th>
@@ -89,9 +99,14 @@
                         <td class="align-middle font-weight-bold text-dark">@p.ProductName</td>
                         <td class="align-middle text-dark">Rs @p.Price</td>
                         <td class="align-middle text-dark">@p.StockQuantity</td>
-                        <td class="align-middle text-dark">@p.UnitName</td> <td class="align-middle text-dark">@p.CategoryName</td>
-                        <td class="align-middle small text-muted">@p.InsertedDate.ToString("yyyy-MM-dd")</td>
-                        <td class="align-middle small text-muted">@p.ModifiedDate.ToString("yyyy-MM-dd")</td>
+                        <td class="align-middle text-dark">@p.UnitName</td>
+                        <td class="align-middle text-dark">@p.CategoryName</td>
+                        
+                        @if (isAdmin)
+                        {
+                            <td class="align-middle small text-muted">@p.InsertedDate.ToString("yyyy-MM-dd")</td>
+                            <td class="align-middle small text-muted">@p.ModifiedDate.ToString("yyyy-MM-dd")</td>
+                        }
                         
                         @if (User.IsInRole("Admin"))
                         {
@@ -199,7 +214,14 @@
 
     <script>
         $(document).ready(function() {
-            $('#productsTable').DataTable({ "order": [[ 6, "desc" ]] }); // Sort by Inserted Date (Index 6)
+            // Updated column index sorting logic
+            var isAdmin = '@isAdmin' === 'True';
+            
+            // If Admin: 9 columns (0-8). Inserted is index 6.
+            // If Not Admin: 7 columns (0-6). Inserted column doesn't exist.
+            var sortCol = isAdmin ? 6 : 1; 
+            
+            $('#productsTable').DataTable({ "order": [[ sortCol, "desc" ]] }); 
         });
 
         Dropzone.autoDiscover = false;
@@ -233,16 +255,12 @@
                 });
                 
                 this.on("sending", function(file, xhr, formData) {
-                    // APPEND ALL INPUTS TO DROPZONE REQUEST
                     formData.append("ProductId", $('#ProductId').val());
                     formData.append("ProductName", $('#ProductName').val());
                     formData.append("Price", $('#Price').val());
                     formData.append("StockQuantity", $('#StockQuantity').val());
                     formData.append("CategoryId", $('#CategoryId').val());
-                    
-                    // NEW: SEND UNIT ID
                     formData.append("UnitId", $('#UnitId').val());
-                    
                     formData.append("ImagePath", $('#ImagePath').val());
                 });
             }
@@ -253,13 +271,11 @@
             myDropzone.removeAllFiles(true);
             
             if (id === 0) {
-                // ADD MODE
                 $('#modalTitle').html('<i class="bi bi-plus-circle mr-2"></i> Add Product');
                 $('#ProductId').val(0);
                 $('#ImagePath').val('');
                 $('#productModal').modal('show');
             } else {
-                // EDIT MODE
                 fetch('/Product/GetProduct/' + id)
                     .then(response => response.json())
                     .then(data => {
@@ -269,10 +285,7 @@
                         $('#Price').val(data.price);
                         $('#StockQuantity').val(data.stockQuantity);
                         $('#CategoryId').val(data.categoryId);
-                        
-                        // NEW: SET UNIT DROPDOWN
                         $('#UnitId').val(data.unitId);
-                        
                         $('#ImagePath').val(data.imagePath);
                         $('#productModal').modal('show');
                     });

@@ -22,7 +22,13 @@ namespace trial.Controllers
 
         public IActionResult Index(DateTime? fromDate, DateTime? toDate)
         {
+            // 1. Fetch Categories
             ViewBag.Categories = _dal.GetCategories();
+
+            // 2. Fetch Units (NEW: Needed for the Unit Dropdown)
+            // Make sure you have created this method in ProductDAL
+            ViewBag.Units = _dal.GetUnits(); 
+
             ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
             ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
 
@@ -55,6 +61,7 @@ namespace trial.Controllers
                 product.ImagePath = "/images/products/" + fileName;
             }
 
+            // This will now save the UnitId because it's part of the 'product' object
             bool success = _dal.UpsertProduct(product, out message);
             return Json(new { success = success, message = message });
         }

@@ -13,19 +13,31 @@
         <label>Product Name</label>
         <input asp-for="ProductName" class="form-control" required />
     </div>
+
     <div class="form-group">
         <label>Price</label>
         <input asp-for="Price" type="number" class="form-control" required />
     </div>
+
     <div class="form-group">
         <label>Stock</label>
         <input asp-for="StockQuantity" type="number" class="form-control" required />
     </div>
+
+    <div class="form-group">
+        <label>Unit</label>
+        <select name="UnitId" class="form-control" required>
+            <option value="">-- Select Unit --</option>
+            @foreach (var unit in ViewBag.Units) { <option value="@unit.UnitId">@unit.UnitName</option> }
+        </select>
+    </div>
+
     <div class="form-group">
         <label>Category</label>
         <select asp-for="CategoryId" class="form-control" asp-items="@(new SelectList(ViewBag.Categories, "CategoryId", "CategoryName"))" required>
             <option value="">-- Select Category --</option>
         </select>
+        <span asp-validation-for="CategoryId" class="text-danger"></span>
     </div>
 </form>
 
@@ -43,21 +55,53 @@
             addRemoveLinks: true,
             init: function() {
                 var dz = this;
+                
+                // Submit Button Logic
                 document.getElementById("submit-all").addEventListener("click", function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
+
+                    // 1. If user added an image, use Dropzone queue
                     if (dz.getQueuedFiles().length > 0) {
-                        dz.processQueue(); // Sends Form + File
-                    } else {
-                        // Sends Form Only (Edit mode without new image)
+                        dz.processQueue(); 
+                    } 
+                    // 2. If no image (Edit mode or text only), submit form manually
+                    else {
                         var formData = new FormData(document.querySelector("#my-dropzone"));
-                        fetch('/Product/AddOrEdit', { method: 'POST', body: formData })
-                        .then(r => r.json()).then(data => {
-                            if(data.success) window.location.href = "/Product/Index";
-                        });
+                        
+                        fetch('/Product/AddOrEdit', { 
+                            method: 'POST', 
+                            body: formData 
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if(data.success) {
+                                window.location.href = "/Product/Index";
+                            } else {
+                                alert("Error saving product: " + (data.message || "Unknown error"));
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
                     }
                 });
+
+                // On Dropzone Success
                 this.on("success", function(file, response) {
-                    if (response.success) window.location.href = "/Product/Index";
+                    if (response.success) {
+                        window.location.href = "/Product/Index";
+                    } else {
+                        alert("Error: " + response.message);
+                    }
+                });
+                
+                // Optional: append form data (like UnitId) to the dropzone request specifically
+                // (Usually not needed if the inputs are inside the <form> tag, but good for safety)
+                this.on("sending", function(file, xhr, formData) {
+                    // This ensures the inputs inside the form are sent with the image
+                    var data = $('#my-dropzone').serializeArray();
+                    $.each(data, function(key, el) {
+                        formData.append(el.name, el.value);
+                    });
                 });
             }
         });

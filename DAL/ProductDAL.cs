@@ -17,6 +17,7 @@ namespace trial.DAL
                                 ?? throw new InvalidOperationException("DefaultConnection is not configured.");
         }
 
+        // --- 1. UPSERT (Add/Edit) ---
         public bool UpsertProduct(Product product, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -26,14 +27,20 @@ namespace trial.DAL
                     using (SqlCommand cmd = new SqlCommand("sp_UpsertProduct", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
+                        
                         cmd.Parameters.AddWithValue("@ProductId", product.ProductId);
                         cmd.Parameters.AddWithValue("@Name", product.ProductName);
                         cmd.Parameters.AddWithValue("@Price", product.Price);
                         cmd.Parameters.AddWithValue("@Stock", product.StockQuantity);
                         cmd.Parameters.AddWithValue("@CatId", product.CategoryId);
+                        
+                        // Pass C# Property (UnitId) to SQL Parameter
+                        cmd.Parameters.AddWithValue("@UnitId", product.UnitId);
+                        
                         cmd.Parameters.AddWithValue("@ImagePath", (object?)product.ImagePath ?? DBNull.Value);
 
-                        SqlParameter outputParam = new SqlParameter("@Message", SqlDbType.NVarChar, 200) { Direction = ParameterDirection.Output };
+                        SqlParameter outputParam = new SqlParameter("@Message", SqlDbType.NVarChar, 200) 
+                        { Direction = ParameterDirection.Output };
                         cmd.Parameters.Add(outputParam);
 
                         conn.Open();
@@ -47,6 +54,7 @@ namespace trial.DAL
             }
         }
 
+        // --- 2. DELETE (Soft Delete) ---
         public bool DeleteProduct(int id, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -67,6 +75,7 @@ namespace trial.DAL
             }
         }
 
+        // --- 3. GET ALL (Filtered) ---
         public List<Product> GetAllProducts(DateTime? fromDate = null, DateTime? toDate = null)
         {
             var products = new List<Product>();
@@ -91,6 +100,13 @@ namespace trial.DAL
                                 StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
                                 CategoryId = Convert.ToInt32(reader["CategoryId"]),
                                 CategoryName = reader["CategoryName"]?.ToString() ?? string.Empty,
+                                
+                                // READING FROM DB: Maps 'unit_id' column to 'UnitId' property
+                                UnitId = reader["unit_id"] != DBNull.Value ? Convert.ToInt32(reader["unit_id"]) : 0,
+                                
+                                // Assuming your View/SP returns 'UnitName' aliased correctly
+                                UnitName = HasColumn(reader, "UnitName") ? reader["UnitName"].ToString() : string.Empty,
+
                                 ImagePath = reader["ImagePath"] != DBNull.Value ? reader["ImagePath"].ToString() : null,
                                 IsDeleted = Convert.ToBoolean(reader["IsDeleted"]),
                                 InsertedDate = reader["InsertedDate"] != DBNull.Value ? Convert.ToDateTime(reader["InsertedDate"]) : DateTime.MinValue,
@@ -103,6 +119,7 @@ namespace trial.DAL
             return products;
         }
 
+        // --- 4. GET CATEGORIES ---
         public List<Category> GetCategories()
         {
              var list = new List<Category>();
@@ -125,6 +142,44 @@ namespace trial.DAL
                  }
              }
              return list;
+        }
+
+        // --- 5. GET UNITS (Updated to read unit_id) ---
+        public List<Unit> GetUnits()
+        {
+             var list = new List<Unit>();
+             using (SqlConnection conn = new SqlConnection(_connectionString))
+             {
+                 // Updated SQL to use unit_id
+                 using (SqlCommand cmd = new SqlCommand("SELECT unit_id, unit_name FROM Unit WHERE IsDeleted = 0", conn))
+                 {
+                     conn.Open();
+                     using (SqlDataReader reader = cmd.ExecuteReader())
+                     {
+                         while (reader.Read())
+                         {
+                             list.Add(new Unit
+                             {
+                                 // Map DB 'unit_id' to C# 'UnitId'
+                                 UnitId = Convert.ToInt32(reader["unit_id"]),
+                                 UnitName = reader["unit_name"]?.ToString() ?? string.Empty
+                             });
+                         }
+                     }
+                 }
+             }
+             return list;
+        }
+
+        // Helper to check column existence safely
+        private bool HasColumn(SqlDataReader reader, string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (reader.GetName(i).Equals(columnName, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
+            return false;
         }
     }
 }

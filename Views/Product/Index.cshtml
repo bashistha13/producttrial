@@ -6,9 +6,12 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="text-dark">Product Management</h2>
+    
     @if (User.IsInRole("Admin")) 
     {
-        <button onclick="openModal(0)" class="btn btn-success shadow-sm"><i class="bi bi-plus-lg mr-2"></i> Add New Product</button>
+        <button onclick="openModal(0)" class="btn btn-success shadow-sm">
+            <i class="bi bi-plus-lg mr-2"></i> Add New Product
+        </button>
     }
 </div>
 
@@ -16,30 +19,43 @@
 @if (TempData["Error"] != null) { <div class="alert alert-danger shadow-sm">@TempData["Error"]</div> }
 
 <div class="card shadow-sm mb-4 border-0">
-    <div class="card-header bg-white py-3 border-bottom"><h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-funnel-fill mr-1"></i> Filter Products</h6></div>
-    <div class="card-body">
-        <form method="get" asp-action="Index">
-            <div class="row align-items-end">
-                <div class="col-md-5 mb-3 mb-md-0">
-                    <label class="text-secondary font-weight-bold small text-uppercase">From Date (Inserted)</label>
-                    <div class="input-group">
-                        <div class="input-group-prepend"><span class="input-group-text bg-light border-right-0"><i class="bi bi-calendar-event text-muted"></i></span></div>
-                        <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control border-left-0" />
+    <div class="card-header bg-white py-3 border-bottom" 
+         style="cursor: pointer;" 
+         data-bs-toggle="collapse" 
+         data-bs-target="#filterPanel" 
+         aria-expanded="false" 
+         aria-controls="filterPanel">
+        <h6 class="m-0 font-weight-bold text-primary d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-funnel-fill mr-1"></i> Filter Products</span>
+            <i class="bi bi-chevron-down small"></i>
+        </h6>
+    </div>
+    
+    <div class="collapse @((ViewBag.FromDate != null || ViewBag.ToDate != null) ? "show" : "")" id="filterPanel">
+        <div class="card-body">
+            <form method="get" asp-action="Index">
+                <div class="row align-items-end">
+                    <div class="col-md-5 mb-3 mb-md-0">
+                        <label class="text-secondary font-weight-bold small text-uppercase">From Date (Inserted)</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend"><span class="input-group-text bg-light border-right-0"><i class="bi bi-calendar-event text-muted"></i></span></div>
+                            <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control border-left-0" />
+                        </div>
+                    </div>
+                    <div class="col-md-5 mb-3 mb-md-0">
+                        <label class="text-secondary font-weight-bold small text-uppercase">To Date</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend"><span class="input-group-text bg-light border-right-0"><i class="bi bi-calendar-check text-muted"></i></span></div>
+                            <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control border-left-0" />
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary btn-block mb-2 shadow-sm">Filter</button>
+                        <a asp-action="Index" class="btn btn-light btn-block border">Reset</a>
                     </div>
                 </div>
-                <div class="col-md-5 mb-3 mb-md-0">
-                    <label class="text-secondary font-weight-bold small text-uppercase">To Date</label>
-                    <div class="input-group">
-                        <div class="input-group-prepend"><span class="input-group-text bg-light border-right-0"><i class="bi bi-calendar-check text-muted"></i></span></div>
-                        <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control border-left-0" />
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary btn-block mb-2 shadow-sm">Filter</button>
-                    <a asp-action="Index" class="btn btn-light btn-block border">Reset</a>
-                </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -52,10 +68,13 @@
                     <th>Name</th>
                     <th>Price</th>
                     <th>Stock</th>
-                    <th>Category</th>
+                    <th>Unit</th> <th>Category</th>
                     <th>Inserted</th>
                     <th>Modified</th>
-                    @if (User.IsInRole("Admin")) { <th style="width: 150px;">Actions</th> }
+                    @if (User.IsInRole("Admin")) 
+                    {
+                        <th style="width: 150px;">Actions</th>
+                    }
                 </tr>
             </thead>
             <tbody>
@@ -63,22 +82,27 @@
                 {
                     <tr>
                         <td class="text-center align-middle">
-                            @if (!string.IsNullOrEmpty(p.ImagePath)) { <img src="@p.ImagePath" class="rounded shadow-sm" style="width:50px;height:50px;object-fit:cover" /> }
+                            @if (!string.IsNullOrEmpty(p.ImagePath)) 
+                            { <img src="@p.ImagePath" class="rounded shadow-sm" style="width:50px;height:50px;object-fit:cover" /> }
                             else { <span class="text-muted small">No Image</span> }
                         </td>
-                        <td class="align-middle font-weight-bold">@p.ProductName</td>
-                        <td class="align-middle text-success">$@p.Price</td>
-                        <td class="align-middle"><span class="badge @(p.StockQuantity < 10 ? "badge-danger" : "badge-success") p-2">@p.StockQuantity</span></td>
-                        <td class="align-middle"><span class="badge badge-info p-2">@p.CategoryName</span></td>
+                        <td class="align-middle font-weight-bold text-dark">@p.ProductName</td>
+                        <td class="align-middle text-dark">Rs @p.Price</td>
+                        <td class="align-middle text-dark">@p.StockQuantity</td>
+                        <td class="align-middle text-dark">@p.UnitName</td> <td class="align-middle text-dark">@p.CategoryName</td>
                         <td class="align-middle small text-muted">@p.InsertedDate.ToString("yyyy-MM-dd")</td>
                         <td class="align-middle small text-muted">@p.ModifiedDate.ToString("yyyy-MM-dd")</td>
                         
                         @if (User.IsInRole("Admin"))
                         {
                             <td class="align-middle text-center">
-                                <button onclick="openModal(@p.ProductId)" class="btn btn-outline-primary btn-sm rounded-circle mr-1" title="Edit"><i class="bi bi-pencil-fill"></i></button>
+                                <button onclick="openModal(@p.ProductId)" class="btn btn-outline-primary btn-sm rounded-circle mr-1" title="Edit">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
                                 <form asp-action="Delete" asp-route-id="@p.ProductId" method="post" style="display:inline" onsubmit="return confirm('Delete permanently?');">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Delete"><i class="bi bi-trash-fill"></i></button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Delete">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
                                 </form>
                             </td>
                         }
@@ -93,25 +117,77 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title font-weight-bold" id="modalTitle"><i class="bi bi-box-seam mr-2"></i> Add Product</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" onclick="$('#productModal').modal('hide')"><span aria-hidden="true">&times;</span></button>
+                <h5 class="modal-title font-weight-bold" id="modalTitle">
+                    <i class="bi bi-box-seam mr-2"></i> Add Product
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" onclick="$('#productModal').modal('hide')">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body bg-light">
                 <form id="productForm" class="dropzone border rounded bg-white" enctype="multipart/form-data">
                     <input type="hidden" id="ProductId" name="ProductId" value="0" />
                     <input type="hidden" id="ImagePath" name="ImagePath" /> 
+
                     <div class="form-row">
-                        <div class="form-group col-md-12"><label class="font-weight-bold">Product Name</label><input type="text" id="ProductName" name="ProductName" class="form-control" placeholder="e.g. Nike Shoes" required /></div>
+                        <div class="form-group col-md-12">
+                            <label class="font-weight-bold">Product Name</label>
+                            <input type="text" id="ProductName" name="ProductName" class="form-control" required />
+                        </div>
                     </div>
+
                     <div class="form-row">
-                        <div class="form-group col-md-6"><label class="font-weight-bold">Price</label><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="number" id="Price" name="Price" class="form-control" placeholder="0.00" required /></div></div>
-                        <div class="form-group col-md-6"><label class="font-weight-bold">Stock</label><input type="number" id="StockQuantity" name="StockQuantity" class="form-control" placeholder="Qty" required /></div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">Price</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend"><span class="input-group-text">Rs</span></div>
+                                <input type="number" id="Price" name="Price" class="form-control" required />
+                            </div>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">Stock</label>
+                            <input type="number" id="StockQuantity" name="StockQuantity" class="form-control" required />
+                        </div>
                     </div>
-                    <div class="form-group"><label class="font-weight-bold">Category</label><select id="CategoryId" name="CategoryId" class="form-control" required><option value="">-- Select Category --</option>@if (ViewBag.Categories != null) { foreach (var cat in ViewBag.Categories) { <option value="@cat.CategoryId">@cat.CategoryName</option> } }</select></div>
-                    <div class="dz-message text-center my-3"><i class="bi bi-cloud-arrow-up display-4 text-primary"></i><p class="mt-2 text-muted">Drop image here or click to upload</p></div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Unit</label>
+                        <select id="UnitId" name="UnitId" class="form-control" required>
+                            <option value="">-- Select Unit --</option>
+                            @if (ViewBag.Units != null)
+                            {
+                                foreach (var unit in ViewBag.Units)
+                                {
+                                    <option value="@unit.UnitId">@unit.UnitName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Category</label>
+                        <select id="CategoryId" name="CategoryId" class="form-control" required>
+                            <option value="">-- Select Category --</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                foreach (var cat in ViewBag.Categories)
+                                {
+                                    <option value="@cat.CategoryId">@cat.CategoryName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="dz-message text-center my-3">
+                        <i class="bi bi-cloud-arrow-up display-4 text-primary"></i>
+                        <p class="mt-2 text-muted">Drop image here or click to upload</p>
+                    </div>
                 </form>
             </div>
-            <div class="modal-footer bg-white"><button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="$('#productModal').modal('hide')">Close</button><button type="button" id="btnSave" class="btn btn-primary px-4">Save Changes</button></div>
+            <div class="modal-footer bg-white">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="$('#productModal').modal('hide')">Close</button>
+                <button type="button" id="btnSave" class="btn btn-primary px-4">Save Changes</button>
+            </div>
         </div>
     </div>
 </div>
@@ -120,42 +196,86 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
     <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+
     <script>
-        $(document).ready(function() { $('#productsTable').DataTable({ "order": [[ 5, "desc" ]] }); });
+        $(document).ready(function() {
+            $('#productsTable').DataTable({ "order": [[ 6, "desc" ]] }); // Sort by Inserted Date (Index 6)
+        });
+
         Dropzone.autoDiscover = false;
         var myDropzone = new Dropzone("#productForm", {
-            url: "/Product/AddOrEdit", autoProcessQueue: false, uploadMultiple: false, maxFiles: 1, addRemoveLinks: true,
+            url: "/Product/AddOrEdit",
+            autoProcessQueue: false, 
+            uploadMultiple: false,
+            maxFiles: 1,
+            addRemoveLinks: true,
             init: function() {
                 var dz = this;
+                
                 document.getElementById("btnSave").addEventListener("click", function (e) {
                     e.preventDefault();
-                    if (dz.getQueuedFiles().length > 0) { dz.processQueue(); } 
-                    else {
+                    if (dz.getQueuedFiles().length > 0) {
+                        dz.processQueue();
+                    } else {
                         var formData = new FormData(document.querySelector("#productForm"));
-                        fetch('/Product/AddOrEdit', { method: 'POST', body: formData }).then(r => r.json()).then(data => { if (data.success) location.reload(); else alert(data.message); });
+                        fetch('/Product/AddOrEdit', { method: 'POST', body: formData })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.success) location.reload();
+                                else alert(data.message);
+                            });
                     }
                 });
-                this.on("success", function (file, response) { if (response.success) location.reload(); else alert(response.message); });
+
+                this.on("success", function (file, response) {
+                    if (response.success) location.reload();
+                    else alert(response.message);
+                });
+                
                 this.on("sending", function(file, xhr, formData) {
+                    // APPEND ALL INPUTS TO DROPZONE REQUEST
                     formData.append("ProductId", $('#ProductId').val());
                     formData.append("ProductName", $('#ProductName').val());
                     formData.append("Price", $('#Price').val());
                     formData.append("StockQuantity", $('#StockQuantity').val());
                     formData.append("CategoryId", $('#CategoryId').val());
+                    
+                    // NEW: SEND UNIT ID
+                    formData.append("UnitId", $('#UnitId').val());
+                    
                     formData.append("ImagePath", $('#ImagePath').val());
                 });
             }
         });
+
         function openModal(id) {
-            $('#productForm')[0].reset(); myDropzone.removeAllFiles(true);
-            if (id === 0) { $('#modalTitle').html('<i class="bi bi-plus-circle mr-2"></i> Add Product'); $('#ProductId').val(0); $('#ImagePath').val(''); $('#productModal').modal('show'); } 
-            else {
-                fetch('/Product/GetProduct/' + id).then(response => response.json()).then(data => {
-                    $('#modalTitle').html('<i class="bi bi-pencil-square mr-2"></i> Edit Product');
-                    $('#ProductId').val(data.productId); $('#ProductName').val(data.productName); $('#Price').val(data.price);
-                    $('#StockQuantity').val(data.stockQuantity); $('#CategoryId').val(data.categoryId); $('#ImagePath').val(data.imagePath);
-                    $('#productModal').modal('show');
-                });
+            $('#productForm')[0].reset();
+            myDropzone.removeAllFiles(true);
+            
+            if (id === 0) {
+                // ADD MODE
+                $('#modalTitle').html('<i class="bi bi-plus-circle mr-2"></i> Add Product');
+                $('#ProductId').val(0);
+                $('#ImagePath').val('');
+                $('#productModal').modal('show');
+            } else {
+                // EDIT MODE
+                fetch('/Product/GetProduct/' + id)
+                    .then(response => response.json())
+                    .then(data => {
+                        $('#modalTitle').html('<i class="bi bi-pencil-square mr-2"></i> Edit Product');
+                        $('#ProductId').val(data.productId);
+                        $('#ProductName').val(data.productName);
+                        $('#Price').val(data.price);
+                        $('#StockQuantity').val(data.stockQuantity);
+                        $('#CategoryId').val(data.categoryId);
+                        
+                        // NEW: SET UNIT DROPDOWN
+                        $('#UnitId').val(data.unitId);
+                        
+                        $('#ImagePath').val(data.imagePath);
+                        $('#productModal').modal('show');
+                    });
             }
         }
     </script>

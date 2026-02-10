@@ -17,6 +17,7 @@ namespace trial.DAL
                                 ?? throw new InvalidOperationException("DefaultConnection is not configured.");
         }
 
+        // 1. GET ALL
         public List<PurchaseEntry> GetAllEntries()
         {
             var list = new List<PurchaseEntry>();
@@ -46,7 +47,7 @@ namespace trial.DAL
             return list;
         }
 
-        // NEW: Get Entry with Details
+        // 2. GET SINGLE ENTRY WITH DETAILS
         public PurchaseEntry GetEntryById(int id)
         {
             PurchaseEntry entry = new PurchaseEntry();
@@ -60,7 +61,6 @@ namespace trial.DAL
                     
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        // 1. Read Master
                         if (reader.Read())
                         {
                             entry.PurchaseEntryId = Convert.ToInt32(reader["PurchaseEntryId"]);
@@ -71,7 +71,6 @@ namespace trial.DAL
                             entry.TotalAmount = Convert.ToDecimal(reader["TotalAmount"]);
                         }
 
-                        // 2. Read Details (Next Result Set)
                         if (reader.NextResult())
                         {
                             while (reader.Read())
@@ -80,7 +79,6 @@ namespace trial.DAL
                                 {
                                     PurchaseEntryDetailId = Convert.ToInt32(reader["PurchaseEntryDetailId"]),
                                     ProductId = Convert.ToInt32(reader["ProductId"]),
-                                   
                                     ProductName = reader["ProductName"]?.ToString() ?? "", 
                                     Quantity = Convert.ToInt32(reader["Quantity"])
                                 });
@@ -92,55 +90,54 @@ namespace trial.DAL
             return entry;
         }
 
+        // 3. INSERT (Updated: Logic moved to SQL)
         public bool InsertEntry(PurchaseEntry entry, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                conn.Open();
-                SqlTransaction transaction = conn.BeginTransaction();
-
                 try
                 {
-                    int newId = 0;
-                    using (SqlCommand cmd = new SqlCommand("sp_InsertPurchaseEntry", conn, transaction))
+                    using (SqlCommand cmd = new SqlCommand("sp_InsertPurchaseEntryWithDetails", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
+                        
                         cmd.Parameters.AddWithValue("@InvoiceNo", entry.InvoiceNo);
                         cmd.Parameters.AddWithValue("@PurchaseDate", entry.PurchaseDate);
                         cmd.Parameters.AddWithValue("@Supplier", entry.Supplier);
                         cmd.Parameters.AddWithValue("@SupplierVAT", entry.SupplierVAT);
-                        cmd.Parameters.AddWithValue("@TotalAmount", entry.TotalAmount);
-                        SqlParameter outputId = new SqlParameter("@Id", SqlDbType.Int) { Direction = ParameterDirection.Output };
-                        cmd.Parameters.Add(outputId);
-                        cmd.ExecuteNonQuery();
-                        newId = (int)outputId.Value;
-                    }
+                        
+                        // NOTE: @TotalAmount is NO LONGER passed. SQL calculates it.
 
-                    foreach (var item in entry.Details)
-                    {
-                        using (SqlCommand cmdDetail = new SqlCommand("sp_InsertPurchaseEntryDetail", conn, transaction))
+                        // Create DataTable for TVP
+                        DataTable dtDetails = new DataTable();
+                        dtDetails.Columns.Add("ProductId", typeof(int));
+                        dtDetails.Columns.Add("Quantity", typeof(int));
+
+                        foreach (var item in entry.Details)
                         {
-                            cmdDetail.CommandType = CommandType.StoredProcedure;
-                            cmdDetail.Parameters.AddWithValue("@PurchaseEntryId", newId);
-                            cmdDetail.Parameters.AddWithValue("@ProductId", item.ProductId);
-                            cmdDetail.Parameters.AddWithValue("@Quantity", item.Quantity);
-                            cmdDetail.ExecuteNonQuery();
+                            dtDetails.Rows.Add(item.ProductId, item.Quantity);
                         }
-                    }
 
-                    transaction.Commit();
-                    message = "Entry saved successfully.";
-                    return true;
+                        SqlParameter tvpParam = cmd.Parameters.AddWithValue("@Details", dtDetails);
+                        tvpParam.SqlDbType = SqlDbType.Structured;
+                        tvpParam.TypeName = "PurchaseEntryDetailType"; 
+
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+
+                        message = "Entry saved & Stock updated successfully.";
+                        return true;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    transaction.Rollback();
                     message = "Error: " + ex.Message;
                     return false;
                 }
             }
         }
 
+        // 4. DELETE
         public bool DeleteEntry(int id, out string message)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))

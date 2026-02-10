@@ -41,7 +41,9 @@
                 <thead class="thead-light">
                     <tr>
                         <th>Product</th>
+                        <th width="150">Price (Unit)</th>
                         <th width="150">Quantity</th>
+                        <th width="150">Line Total</th>
                         <th width="50"></th>
                     </tr>
                 </thead>
@@ -50,48 +52,67 @@
             </table>
             
             <div class="p-3 text-right bg-light border-top">
-                <label class="font-weight-bold mr-2">Total Amount:</label>
-                <input asp-for="TotalAmount" type="number" step="0.01" class="form-control d-inline-block" style="width: 150px;" required />
+                <label class="font-weight-bold mr-2">Grand Total:</label>
+                <input asp-for="TotalAmount" type="number" step="0.01" class="form-control d-inline-block bg-white font-weight-bold text-success" style="width: 150px;" readonly />
             </div>
         </div>
     </div>
 
-    <button type="submit" class="btn btn-success btn-lg shadow-sm">Save Entry</button>
+    <button type="submit" class="btn btn-success btn-lg shadow-sm">Save Entry & Update Stock</button>
 </form>
 
 @section Scripts {
     <script>
         $(document).ready(function () {
-            // Add first row by default
             addRow();
 
             $('#btnAddRow').click(function () {
                 addRow();
             });
 
-            // Delete Row
+            // Event Delegation: Handle changes on Product Select or Quantity Input
+            $(document).on('change keyup', '.product-select, .qty-input', function () {
+                calculateRowTotal($(this).closest('tr'));
+                calculateGrandTotal();
+            });
+
             $(document).on('click', '.btn-remove', function () {
                 $(this).closest('tr').remove();
                 reindexRows();
+                calculateGrandTotal();
             });
         });
 
         function addRow() {
             var index = $('#tblItems tbody tr').length;
             
-            // Generate Dropdown Options from ViewBag
-            var productOptions = '@Html.Raw(string.Join("", ((SelectList)ViewBag.ProductList).Select(x => $"<option value=\"{x.Value}\">{x.Text}</option>")))';
+            // Build Options with Data-Price Attribute
+            var options = '<option value="" data-price="0">-- Select Product --</option>';
+            @if (ViewBag.FullProductList != null)
+            {
+                foreach (var p in (List<trial.Models.Product>)ViewBag.FullProductList)
+                {
+                    <text>
+                    options += '<option value="@p.ProductId" data-price="@p.Price">@p.ProductName</option>';
+                    </text>
+                }
+            }
 
             var html = `
                 <tr>
                     <td>
-                        <select name="Details[${index}].ProductId" class="form-control" required>
-                            <option value="">-- Select Product --</option>
-                            ${productOptions}
+                        <select name="Details[${index}].ProductId" class="form-control product-select" required>
+                            ${options}
                         </select>
                     </td>
                     <td>
-                        <input type="number" name="Details[${index}].Quantity" class="form-control" required min="1" />
+                        <input type="text" class="form-control price-display" readonly disabled value="0.00" />
+                    </td>
+                    <td>
+                        <input type="number" name="Details[${index}].Quantity" class="form-control qty-input" required min="1" value="1" />
+                    </td>
+                    <td>
+                        <input type="text" class="form-control line-total" readonly disabled value="0.00" />
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-danger btn-sm btn-remove"><i class="bi bi-trash"></i></button>
@@ -101,11 +122,30 @@
             $('#tblItems tbody').append(html);
         }
 
-        // Re-index rows so ASP.NET binding works (Details[0], Details[1]...)
+        function calculateRowTotal(row) {
+            // Get selected option price
+            var price = parseFloat(row.find('.product-select option:selected').data('price')) || 0;
+            var qty = parseInt(row.find('.qty-input').val()) || 0;
+            var total = price * qty;
+
+            // Update UI fields
+            row.find('.price-display').val(price.toFixed(2));
+            row.find('.line-total').val(total.toFixed(2));
+        }
+
+        function calculateGrandTotal() {
+            var grandTotal = 0;
+            $('#tblItems tbody tr').each(function () {
+                var rowTotal = parseFloat($(this).find('.line-total').val()) || 0;
+                grandTotal += rowTotal;
+            });
+            $('#TotalAmount').val(grandTotal.toFixed(2));
+        }
+
         function reindexRows() {
             $('#tblItems tbody tr').each(function (i, row) {
                 $(row).find('select').attr('name', `Details[${i}].ProductId`);
-                $(row).find('input[type="number"]').attr('name', `Details[${i}].Quantity`);
+                $(row).find('.qty-input').attr('name', `Details[${i}].Quantity`);
             });
         }
     </script>

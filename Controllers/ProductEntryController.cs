@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using trial.DAL;
 using trial.Models;
 using System.Collections.Generic;
+using System.Linq; // Needed for Select()
 
 namespace trial.Controllers
 {
@@ -28,7 +29,13 @@ namespace trial.Controllers
         public IActionResult Create()
         {
             var products = _productDAL.GetAllProducts();
+            
+            // Pass the full product list to ViewBag so we can access Prices in the View
+            ViewBag.FullProductList = products;
+
+            // Simple list for the dropdown
             ViewBag.ProductList = new SelectList(products, "ProductId", "ProductName");
+            
             return View(new PurchaseEntry());
         }
 
@@ -47,6 +54,7 @@ namespace trial.Controllers
             {
                 TempData["Error"] = message;
                 var products = _productDAL.GetAllProducts();
+                ViewBag.FullProductList = products;
                 ViewBag.ProductList = new SelectList(products, "ProductId", "ProductName");
                 return View(entry);
             }
@@ -62,7 +70,6 @@ namespace trial.Controllers
             return RedirectToAction("Index");
         }
 
-        // --- NEW: THIS IS REQUIRED FOR THE POPUP TO WORK ---
         [HttpGet]
         public IActionResult GetDetails(int id)
         {

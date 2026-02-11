@@ -1,12 +1,8 @@
 @model List<trial.Models.Product>
 @{ 
     ViewData["Title"] = "Products"; 
-    // UPDATED: Using IsInRole("Admin") because we know this works for your Actions column
     bool isAdmin = User.IsInRole("Admin");
 }
-
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css" />
-<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" />
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="text-dark">Product Management</h2>
@@ -74,16 +70,14 @@
                     <th>Stock</th>
                     <th>Unit</th>
                     <th>Category</th>
-                    
                     @if (isAdmin)
                     {
                         <th>Inserted</th>
                         <th>Modified</th>
                     }
-                    
                     @if (User.IsInRole("Admin")) 
                     {
-                        <th style="width: 150px;">Actions</th>
+                        <th style="width: 150px;" class="no-export">Actions</th>
                     }
                 </tr>
             </thead>
@@ -101,13 +95,11 @@
                         <td class="align-middle text-dark">@p.StockQuantity</td>
                         <td class="align-middle text-dark">@p.UnitName</td>
                         <td class="align-middle text-dark">@p.CategoryName</td>
-                        
                         @if (isAdmin)
                         {
                             <td class="align-middle small text-muted">@p.InsertedDate.ToString("yyyy-MM-dd")</td>
                             <td class="align-middle small text-muted">@p.ModifiedDate.ToString("yyyy-MM-dd")</td>
                         }
-                        
                         @if (User.IsInRole("Admin"))
                         {
                             <td class="align-middle text-center">
@@ -208,20 +200,31 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
-    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
-
     <script>
         $(document).ready(function() {
-            // Updated column index sorting logic
             var isAdmin = '@isAdmin' === 'True';
-            
-            // If Admin: 9 columns (0-8). Inserted is index 6.
-            // If Not Admin: 7 columns (0-6). Inserted column doesn't exist.
             var sortCol = isAdmin ? 6 : 1; 
             
-            $('#productsTable').DataTable({ "order": [[ sortCol, "desc" ]] }); 
+            // CONFIGURE DATATABLE WITH BUTTONS
+            // dom: 'Bfrtip' puts buttons (B) at top-left, filter (f) at top-right
+            $('#productsTable').DataTable({ 
+                "order": [[ sortCol, "desc" ]],
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                        className: 'btn btn-success btn-sm mb-3 mr-1',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                        className: 'btn btn-danger btn-sm mb-3',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    }
+                ]
+            }); 
         });
 
         Dropzone.autoDiscover = false;
@@ -233,27 +236,19 @@
             addRemoveLinks: true,
             init: function() {
                 var dz = this;
-                
                 document.getElementById("btnSave").addEventListener("click", function (e) {
                     e.preventDefault();
-                    if (dz.getQueuedFiles().length > 0) {
-                        dz.processQueue();
-                    } else {
+                    if (dz.getQueuedFiles().length > 0) { dz.processQueue(); } 
+                    else {
                         var formData = new FormData(document.querySelector("#productForm"));
                         fetch('/Product/AddOrEdit', { method: 'POST', body: formData })
                             .then(r => r.json())
-                            .then(data => {
-                                if (data.success) location.reload();
-                                else alert(data.message);
-                            });
+                            .then(data => { if (data.success) location.reload(); else alert(data.message); });
                     }
                 });
-
                 this.on("success", function (file, response) {
-                    if (response.success) location.reload();
-                    else alert(response.message);
+                    if (response.success) location.reload(); else alert(response.message);
                 });
-                
                 this.on("sending", function(file, xhr, formData) {
                     formData.append("ProductId", $('#ProductId').val());
                     formData.append("ProductName", $('#ProductName').val());

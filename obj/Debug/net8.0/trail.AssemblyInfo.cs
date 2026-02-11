@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("trail")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3823c3e742d53ead0c536a89010d7af338762ade")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e42dc5887d1980cdb51bcac52a2f9792dc5e9b39")]
 [assembly: System.Reflection.AssemblyProductAttribute("trail")]
 [assembly: System.Reflection.AssemblyTitleAttribute("trail")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
